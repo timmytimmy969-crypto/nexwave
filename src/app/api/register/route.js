@@ -25,15 +25,24 @@ export async function POST(request) {
       return NextResponse.json({ message: "This email is already part of the first wave." }, { status: 409 });
     }
 
-    await savePendingMember({
-      full_name: payload.fullName.trim(),
-      email,
-      instagram: payload.instagram.trim().replace(/^@/, ""),
-      creative_field: payload.field
-    });
+    try {
+      await savePendingMember({
+        full_name: payload.fullName.trim(),
+        email,
+        instagram: payload.instagram.trim().replace(/^@/, ""),
+        creative_field: payload.field
+      });
+    } catch (error) {
+      console.error("Supabase registration save failed:", error);
+      return NextResponse.json({ message: "Database could not save this registration." }, { status: 500 });
+    }
 
     const code = createOtp(email);
     const mail = await sendOtpEmail(email, code, payload.fullName.trim());
+    if (mail?.error) {
+      console.error("OTP email failed:", mail.error);
+      return NextResponse.json({ message: "Email service could not send the verification code." }, { status: 500 });
+    }
 
     return NextResponse.json({
       ok: true,
