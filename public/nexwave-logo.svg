@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 620" role="img" aria-labelledby="title desc">
+  <title id="title">NEXWAVE</title>
+  <desc id="desc">A black and gold brush wave mark with the Nexwave wordmark.</desc>
+  <rect width="900" height="620" fill="#f8f4ec"/>
+  <path d="M205 320 C245 140 300 126 333 285 C363 427 427 424 486 306 C542 192 636 214 720 328"
+        fill="none" stroke="#050403" stroke-width="72" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M485 307 C558 203 642 219 735 328 C759 356 783 370 814 378"
+        fill="none" stroke="#c99b3a" stroke-width="58" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="606" cy="162" r="44" fill="none" stroke="#c99b3a" stroke-width="22"/>
+  <g fill="#050403" font-family="Georgia, 'Times New Roman', serif" font-size="78" font-weight="700">
+    <text x="87" y="505">N E </text>
+    <text x="304" y="505" fill="#c99b3a">X</text>
+    <text x="396" y="505"> W A V E</text>
+  </g>
+  <g fill="#050403" font-family="Arial, sans-serif" font-size="24" letter-spacing="15">
+    <text x="246" y="565">CREATE. CONNECT. ELEVATE.</text>
+  </g>
+</svg>
