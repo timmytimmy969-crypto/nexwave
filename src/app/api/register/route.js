@@ -20,7 +20,14 @@ export async function POST(request) {
       return NextResponse.json({ message: "Too many code requests. Try again in a few minutes." }, { status: 429 });
     }
 
-    const existing = await findMemberByEmail(email);
+    let existing = null;
+    try {
+      existing = await findMemberByEmail(email);
+    } catch (error) {
+      console.error("Supabase registration lookup failed:", error);
+      return NextResponse.json({ message: "Database could not check this email." }, { status: 500 });
+    }
+
     if (existing?.verified) {
       return NextResponse.json({ message: "This email is already part of the first wave." }, { status: 409 });
     }
@@ -44,11 +51,7 @@ export async function POST(request) {
       return NextResponse.json({ message: "Email service could not send the verification code." }, { status: 500 });
     }
 
-    return NextResponse.json({
-      ok: true,
-      message: "Verification code sent.",
-      demoCode: mail?.demo ? code : undefined
-    });
+    return NextResponse.json({ ok: true, message: "Verification code sent.", demoCode: mail?.demo ? code : undefined });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ message: error.issues[0]?.message || "Invalid registration details." }, { status: 400 });
