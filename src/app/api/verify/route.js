@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { addResendContact, consumeOtp, normalizeEmail, sendWelcomeEmail } from "@/lib/otp";
-import { verifyMember } from "@/lib/store";
+import { addResendContact, normalizeEmail, sendWelcomeEmail } from "@/lib/otp";
+import { consumeStoredOtp, verifyMember } from "@/lib/store";
 
 const schema = z.object({
   email: z.string().email(),
@@ -13,7 +13,7 @@ export async function POST(request) {
     const payload = schema.parse(await request.json());
     const email = normalizeEmail(payload.email);
 
-    if (!consumeOtp(email, payload.code)) {
+    if (!(await consumeStoredOtp(email, payload.code))) {
       return NextResponse.json({ message: "Invalid or expired verification code." }, { status: 400 });
     }
 
