@@ -89,3 +89,53 @@ export async function listMembers() {
 
   return readLocal();
 }
+
+export async function saveOtpCode(email, code) {
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+  const db = supabase();
+
+  if (db) {
+    const { error } = await db
+      .from("otp_codes")
+      .upsert({ email, code, expires_at: expiresAt, attempts: 0 }, { onConflict: "email" });
+    if (error) throw error;
+    return;
+  }
+
+  const rows = await readLocal();
+  const index = rows.findIndex((row) => row.email === email);
+  const otp = { code, expires_at: expiresAt, attempts: 0 };
+  if (index >= 0) rows[index] = { ...rows[index], otp };
+  else rows.push({ email, otp });
+  await writeLocal(rows);
+}
+
+export async function consumeStoredOtp(email, code) {
+  const db = supabase();
+
+  if (db) {
+    const { data, error } = await db.from("otp_codes").select("*").eq("email", email).maybeSingle();
+    if (error) throw error;
+    if (!data || new Date(data.expires_at).getTime() < Date.now()) return false;
+    if ((data.attempts || 0) >= 5) return false;
+    if (data.code !== code) {
+      await db.from("otp_codes").update({ attempts: (data.attempts || 0) + 1 }).eq("email", email);
+      return false;
+    }
+    await db.from("otp_codes").delete().eq("email", email);
+    return true;
+  }
+
+  const rows = await readLocal();
+  const row = rows.find((item) => item.email === email);
+  if (!row?.otp || new Date(row.otp.expires_at).getTime() < Date.now()) return false;
+  if ((row.otp.attempts || 0) >= 5) return false;
+  if (row.otp.code !== code) {
+    row.otp.attempts = (row.otp.attempts || 0) + 1;
+    await writeLocal(rows);
+    return false;
+  }
+  delete row.otp;
+  await writeLocal(rows);
+  return true;
+}
