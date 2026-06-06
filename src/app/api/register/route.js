@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { addResendContact, canRequestOtp, normalizeEmail, sendWelcomeEmail } from "@/lib/otp";
-import { findMemberByEmail, savePendingMember, verifyMember } from "@/lib/store";
+import { canRequestOtp, createOtp, normalizeEmail, sendOtpEmail } from "@/lib/otp";
+import { findMemberByEmail, saveOtpCode, savePendingMember } from "@/lib/store";
 
 const schema = z.object({
   fullName: z.string().min(2).max(120),
@@ -17,7 +17,7 @@ export async function POST(request) {
     const ip = request.headers.get("x-forwarded-for")?.split(",")[0] || "local";
 
     if (!canRequestOtp(email, ip)) {
-      return NextResponse.json({ message: "Too many signups from this email. Try again in a few minutes." }, { status: 429 });
+      return NextResponse.json({ message: "Too many code requests. Try again in a few minutes." }, { status: 429 });
     }
 
     let existing = null;
@@ -44,19 +44,16 @@ export async function POST(request) {
       return NextResponse.json({ message: "Database could not save this registration." }, { status: 500 });
     }
 
-    const member = await verifyMember(email);
+    const code = createOtp(email);
+    await saveOtpCode(email, code);
 
-    const welcome = await sendWelcomeEmail(member.email, member.full_name);
-    if (welcome?.error) console.error("Welcome email failed:", welcome.error);
+    const mail = await sendOtpEmail(email, code, payload.fullName.trim());
+    if (mail?.error) {
+      console.error("OTP email failed:", mail.error);
+      return NextResponse.json({ message: "Email service could not send the verification code." }, { status: 500 });
+    }
 
-    const contact = await addResendContact(member);
-    if (contact?.error) console.error("Resend contact sync failed:", contact.error);
-
-    return NextResponse.json({
-      ok: true,
-      message: "Welcome to Nexwave.",
-      whatsapp: "https://chat.whatsapp.com/FZSJW6vCjr48HhYmbkRFNr"
-    });
+    return NextResponse.json({ ok: true, message: "Verification code sent." });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ message: error.issues[0]?.message || "Invalid registration details." }, { status: 400 });
